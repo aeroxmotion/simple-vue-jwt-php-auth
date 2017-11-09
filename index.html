@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Simple Vue Login With JWT</title>
+  </head>
+  <body>
+    <div id="app">
+      <form @submit.prevent="login()" v-if="!authenticated">
+        <input type="text" v-model="credentials.username">
+        <input type="password" v-model="credentials.password">
+        <input type="checkbox" v-model="rememberUsername">
+        <button type="submit">Login</button>
+      </form>
+
+      <div v-else>
+        Bienvenido {{ name }}
+
+        <h2>Tareas</h2>
+        <ul>
+          <li v-for="todo in todos">
+            {{ todo.title }} - done: <input type="checkbox">
+          </li>
+        </ul>
+
+        <p>
+          <input type="text" v-model="newTodo.title" placeholder="Título todo">
+          <button type="button" @click="saveTodo()">Guardar</button>
+        </p>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@2.5.3/dist/vue.js"></script>
+    <script>
+      new Vue({
+        el: '#app',
+
+        data: {
+          authenticated: !!localStorage.getItem('token'),
+          rememberUsername: false,
+          credentials: {
+            username: localStorage.getItem('username'),
+            password: ''
+          },
+          todos: [
+            { title: 'Todo 1', done: false },
+            { title: 'Todo 2', done: true }
+          ],
+          name: '',
+          newTodo: {
+            title: '',
+            done: false
+          }
+        },
+
+        methods: {
+          login () {
+            fetch('/auth.php', {
+                method: 'POST',
+                body: JSON.stringify(this.credentials)
+              })
+              .then(response => response.text())
+              .then(token => {
+                if (token) {
+                  if (this.rememberUsername) {
+                    localStorage.setItem('username', this.credentials.username)
+                  }
+
+                  this.authenticated = true
+                  this.name = JSON.parse(atob(token.split('.')[1])).name
+                  localStorage.setItem('token', token)
+                }
+              })
+              .catch(console.error)
+          },
+
+          saveTodo () {
+            fetch(`/verify-token.php?token=${localStorage.getItem('token')}`)
+              .then(response => response.json())
+              .then(data => {
+                if (data.isValidToken) {
+                  this.todos.push(Object.assign({}, this.newTodo))
+                }
+              })
+          },
+
+          logout () {
+            this.authenticated = false
+            this.name = ''
+            localStorage.removeItem('token');
+          }
+        }
+      })
+    </script>
+  </body>
+</html>
