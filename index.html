@@ -75,19 +75,26 @@
           },
 
           saveTodo () {
-            fetch(`/verify-token.php?token=${localStorage.getItem('token')}`)
-              .then(response => response.json())
-              .then(data => {
-                if (data.isValidToken) {
-                  this.todos.push(Object.assign({}, this.newTodo))
-                }
-              })
+            const headers = new Headers()
+            headers.append('Authorization', localStorage.getItem('token'))
+
+            fetch('/save-todos.php', {
+              method: 'post',
+              body: JSON.stringify(this.newTodo),
+              headers
+            })
+            .then(response => response.text())
+            .then(data => {
+              if (data.todoSaved) {
+                this.todos.push(this.newTodo)
+              }
+            })
           },
 
           logout () {
             this.authenticated = false
             this.name = ''
-            localStorage.removeItem('token');
+            localStorage.removeItem('token')
           }
         }
       })
